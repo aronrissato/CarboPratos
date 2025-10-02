@@ -1,5 +1,5 @@
 """
-Calculadora de calorias baseada em detecções de alimentos.
+Calorie calculator based on food detections.
 """
 
 from typing import List, Dict
@@ -11,43 +11,43 @@ from PIL import Image
 
 
 class CalorieCalculator:
-    """Calculadora de calorias para pratos de comida."""
+    """Calorie calculator for food plates."""
     
     def __init__(self, detector: FoodDetector):
         """
-        Inicializa a calculadora.
+        Initializes the calculator.
         
         Args:
-            detector: Instância do detector de alimentos
+            detector: Food detector instance
         """
         self.detector = detector
     
     def CalculatePlateCalories(self, image_path: str) -> Dict:
         """
-        Calcula as calorias de um prato baseado nas detecções.
+        Calculates plate calories based on detections.
         
         Args:
-            image_path: Caminho para a imagem do prato
+            image_path: Path to the plate image
             
         Returns:
-            Dicionário com informações sobre o prato e suas calorias
+            Dictionary with plate and calorie information
         """
-        # Detecta alimentos na imagem
+        # Detect foods in the image
         detections = self.detector.DetectFoods(image_path)
         
-        # Carrega a imagem para obter dimensões
+        # Load image to get dimensions
         image = self._LoadImage(image_path)
-        image_shape = image.shape[:2]  # (altura, largura)
+        image_shape = image.shape[:2]  # (height, width)
         
         total_calories = 0
         food_details = []
         
-        # Processa cada detecção
+        # Process each detection
         for detection in detections:
-            # Estima a quantidade em gramas
+            # Estimate quantity in grams
             estimated_weight = self.detector.EstimateFoodQuantity(detection, image_shape)
             
-            # Calcula calorias para esta quantidade
+            # Calculate calories for this quantity
             calories = (detection['calories_per_100g'] * estimated_weight) / 100
             
             total_calories += calories
@@ -68,38 +68,38 @@ class CalorieCalculator:
     
     def _LoadImage(self, image_path: str) -> np.ndarray:
         """
-        Carrega uma imagem usando OpenCV, com fallback para PIL.
+        Loads an image using OpenCV, with PIL fallback.
         
         Args:
-            image_path: Caminho para a imagem
+            image_path: Path to the image
             
         Returns:
-            Array numpy da imagem
+            Numpy array of the image
             
         Raises:
-            ValueError: Se a imagem não puder ser carregada
+            ValueError: If image cannot be loaded
         """
-        # Converte para caminho absoluto e verifica se existe
+        # Convert to absolute path and check if exists
         abs_path = Path(image_path).resolve()
         if not abs_path.exists():
             raise ValueError(f"Image Not Found {abs_path}")
         
-        # Tenta carregar com OpenCV primeiro
+        # Try loading with OpenCV first
         image = cv2.imread(str(abs_path))
         if image is not None:
             return image
         
-        # Se OpenCV falhou, tenta com PIL
+        # If OpenCV failed, try with PIL
         try:
             with Image.open(image_path) as pil_image:
-                # Converte PIL para numpy array (RGB)
+                # Convert PIL to numpy array (RGB)
                 pil_array = np.array(pil_image)
                 
-                # Se a imagem tem canal alpha, remove
+                # If image has alpha channel, remove it
                 if len(pil_array.shape) == 3 and pil_array.shape[2] == 4:
                     pil_array = pil_array[:, :, :3]
                 
-                # Converte RGB para BGR (OpenCV usa BGR)
+                # Convert RGB to BGR (OpenCV uses BGR)
                 if len(pil_array.shape) == 3:
                     pil_array = cv2.cvtColor(pil_array, cv2.COLOR_RGB2BGR)
                 

@@ -1,6 +1,6 @@
 """
-Processador de imagens de uma pasta.
-Responsável por processar todas as imagens em um diretório.
+Image processor for a folder.
+Responsible for processing all images in a directory.
 """
 
 import os
@@ -11,32 +11,32 @@ from .food_detector import FoodDetector
 
 
 class ImageProcessor:
-    """Processador de imagens para análise de calorias."""
+    """Image processor for calorie analysis."""
     
     def __init__(self, calorie_calculator: CalorieCalculator):
         """
-        Inicializa o processador.
+        Initializes the processor.
         
         Args:
-            calorie_calculator: Instância da calculadora de calorias
+            calorie_calculator: Calorie calculator instance
         """
         self.calculator = calorie_calculator
         self.supported_formats = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.avif', '.webp'}
     
     def ProcessDirectory(self, directory_path: str, output_directory: str = None) -> List[dict]:
         """
-        Processa todas as imagens em um diretório.
+        Processes all images in a directory.
         
         Args:
-            directory_path: Caminho para o diretório com imagens
-            output_directory: Diretório para salvar os resultados (opcional)
+            directory_path: Path to the directory with images
+            output_directory: Directory to save results (optional)
             
         Returns:
-            Lista com resultados do processamento
+            List with processing results
         """
         directory = Path(directory_path)
         if not directory.exists():
-            raise ValueError(f"Diretório não encontrado: {directory_path}")
+            raise ValueError(f"Directory not found: {directory_path}")
         
         if output_directory:
             output_dir = Path(output_directory)
@@ -53,7 +53,7 @@ class ImageProcessor:
                 result = self.calculator.CalculatePlateCalories(str(image_file))
                 results.append(result)
                 
-                # Salva resultado em arquivo de texto
+                # Save result to text file
                 self._SaveResultToFile(result, image_file, output_dir)
                 
             except Exception as e:
@@ -69,33 +69,33 @@ class ImageProcessor:
     
     def _SaveResultToFile(self, result: dict, image_file: Path, output_dir: Path):
         """
-        Salva o resultado em um arquivo de texto.
+        Saves the result to a text file.
         
         Args:
-            result: Resultado do cálculo de calorias
-            image_file: Arquivo da imagem original
-            output_dir: Diretório de saída
+            result: Calorie calculation result
+            image_file: Original image file
+            output_dir: Output directory
         """
-        # Nome do arquivo baseado na imagem
+        # Filename based on the image
         output_filename = image_file.stem + '_calories.txt'
         output_path = output_dir / output_filename
         
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(f"ANÁLISE DE CALORIAS - {image_file.name}\n")
+            f.write(f"CALORIE ANALYSIS - {image_file.name}\n")
             f.write("=" * 50 + "\n\n")
             
             if 'error' in result:
-                f.write(f"ERRO: {result['error']}\n")
+                f.write(f"ERROR: {result['error']}\n")
             else:
-                f.write(f"Calorias totais: {result['total_calories']} kcal\n")
-                f.write(f"Alimentos detectados: {result['food_count']}\n\n")
+                f.write(f"Total calories: {result['total_calories']} kcal\n")
+                f.write(f"Foods detected: {result['food_count']}\n\n")
                 
                 if result['food_details']:
-                    f.write("Detalhes dos alimentos:\n")
+                    f.write("Food details:\n")
                     f.write("-" * 30 + "\n")
                     for food in result['food_details']:
                         f.write(f"• {food['food'].title()}: ")
                         f.write(f"{food['weight_g']}g ({food['calories']} kcal) ")
-                        f.write(f"[Confiança: {food['confidence']}]\n")
+                        f.write(f"[Confidence: {food['confidence']}]\n")
                 else:
-                    f.write("Nenhum alimento foi detectado na imagem.\n")
+                    f.write("No foods were detected in the image.\n")

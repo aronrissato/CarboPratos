@@ -1,85 +1,85 @@
-# CarboPratos - Analisador de Calorias 🍽️
+# CarboPratos - Food Calorie Analyzer 🍽️
 
-Um sistema simples e eficiente para análise de calorias em pratos de comida usando YOLO e IA.
+A simple and efficient system for analyzing calories in food plates using YOLO and AI.
 
-## 🚀 Como usar
+## 🚀 How to Use
 
-### 1. Instalação
+### 1. Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Execução
+### 2. Execution
 
 ```bash
-python main.py "caminho/para/sua/pasta/imagens"
+python main.py "path/to/your/images/folder"
 ```
 
-Ou execute sem parâmetros para inserir o caminho interativamente:
+Or run without parameters to enter the path interactively:
 
 ```bash
 python main.py
 ```
 
-### 3. Resultados
+### 3. Results
 
-O programa irá:
-- Processar todas as imagens JPEG/PNG na pasta
-- Detectar alimentos usando YOLO
-- Calcular calorias baseado nos alimentos detectados
-- Gerar arquivos `.txt` com os resultados
+The program will:
+- Process all JPEG/PNG images in the folder
+- Detect foods using YOLO
+- Calculate calories based on detected foods
+- Generate `.txt` files with results
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 CarboPratos/
 ├── src/
-│   ├── calorie_database.py    # Base de dados de calorias
-│   ├── food_detector.py       # Detector YOLO de alimentos
-│   ├── calorie_calculator.py  # Calculadora de calorias
-│   └── image_processor.py     # Processador de imagens
-├── main.py                    # Programa principal
-├── requirements.txt           # Dependências
-└── README.md                  # Este arquivo
+│   ├── calorie_database.py    # Calorie database
+│   ├── food_detector.py       # YOLO food detector
+│   ├── calorie_calculator.py  # Calorie calculator
+│   └── image_processor.py     # Image processor
+├── main.py                    # Main program
+├── requirements.txt           # Dependencies
+└── README.md                  # This file
 ```
 
-## 🍎 Alimentos Suportados
+## 🍎 Supported Foods
 
-O sistema reconhece e calcula calorias para:
-- Frutas (maçã, banana, uva, etc.)
-- Vegetais (cenoura, brócolis, tomate, etc.)
-- Proteínas (frango, carne, peixe, etc.)
-- Carboidratos (pão, arroz, massa, etc.)
-- Laticínios (queijo, leite)
+The system recognizes and calculates calories for:
+- Fruits (apple, banana, grapes, etc.)
+- Vegetables (carrot, broccoli, tomato, etc.)
+- Proteins (chicken, beef, fish, etc.)
+- Carbohydrates (bread, rice, pasta, etc.)
+- Dairy (cheese, milk)
 
-## ⚡ Características
+## ⚡ Features
 
-- **Simples**: Interface de linha de comando fácil de usar
-- **Eficiente**: Processamento otimizado sem logs desnecessários
-- **Extensível**: Fácil adição de novos alimentos na base de dados
-- **Robusto**: Tratamento de erros e validações
+- **Simple**: Easy-to-use command line interface
+- **Efficient**: Optimized processing without unnecessary logs
+- **Extensible**: Easy addition of new foods to the database
+- **Robust**: Error handling and validations
 
-## 🔧 Desenvolvimento
+## 🔧 Development
 
-O projeto segue os princípios:
-- **SOLID**: Separação de responsabilidades
-- **KISS**: Simplicidade e clareza
-- **Performance**: Otimizado para velocidade
+The project follows these principles:
+- **SOLID**: Separation of responsibilities
+- **KISS**: Simplicity and clarity
+- **Performance**: Optimized for speed
 
-## 📝 Exemplo de Saída
+## 📝 Output Example
 
-Para uma imagem `prato_arroz.jpg`, será gerado `prato_arroz_calories.txt`:
+For an image `rice_plate.jpg`, it will generate `rice_plate_calories.txt`:
 
 ```
-ANÁLISE DE CALORIAS - prato_arroz.jpg
+CALORIE ANALYSIS - rice_plate.jpg
 ==================================================
 
-Calorias totais: 350.5 kcal
-Alimentos detectados: 2
+Total calories: 350.5 kcal
+Foods detected: 2
 
-Detalhes dos alimentos:
+Food details:
 ------------------------------
-• Rice: 150.0g (195.0 kcal) [Confiança: 0.85]
-• Chicken: 120.0g (198.0 kcal) [Confiança: 0.92]
+• Rice: 150.0g (195.0 kcal) [Confidence: 0.85]
+• Chicken: 120.0g (198.0 kcal) [Confidence: 0.92]
 ```

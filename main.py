@@ -1,5 +1,5 @@
 """
-Programa principal para análise de calorias em pratos de comida.
+Main program for food calorie analysis.
 """
 
 import sys
@@ -10,79 +10,79 @@ from src.image_processor import ImageProcessor
 
 
 def main():
-    """Função principal do programa."""
-    print("CarboPratos - Analisador de Calorias")
+    """Main program function."""
+    print("CarboPratos - Food Calorie Analyzer")
     print("=" * 40)
     
-    # Obtém e valida o caminho
+    # Gets and validates the path
     images_directory = GetFolderPath()
     if not ValidatePath(images_directory):
         return
     
     try:
-        # Inicializa componentes do sistema
-        print("\nInicializando sistema...")
+        # Initialize system components
+        print("\nInitializing system...")
         detector = FoodDetector()
         calculator = CalorieCalculator(detector)
         processor = ImageProcessor(calculator)
-        print("Sistema inicializado com sucesso!")
+        print("System initialized successfully!")
         
-        # Processa diretório
+        # Process directory
         results = ProcessDirectory(processor, images_directory)
         
-        # Exibe resumo
+        # Display summary
         PrintResume(results, images_directory)
         
     except Exception as e:
-        print(f"ERRO durante o processamento: {str(e)}")
+        print(f"ERROR during processing: {str(e)}")
         return
 
 
 def GetFolderPath() -> str:
-    """Obtém o caminho da pasta com imagens."""
+    """Gets the path to the images folder."""
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        return input("Digite o caminho da pasta com as imagens: ").strip()
+        return input("Enter the path to the images folder: ").strip()
 
 
 def ValidatePath(directory_path: str) -> bool:
-    """Valida se o diretório existe."""
+    """Validates if the directory exists."""
     if not Path(directory_path).exists():
-        print(f"ERRO: Diretório não encontrado: {directory_path}")
+        print(f"ERROR: Directory not found: {directory_path}")
         return False
     return True
 
 
 def ProcessDirectory(processor: ImageProcessor, directory_path: str):
-    """Processa todas as imagens do diretório."""
-    print(f"\nProcessando imagens em: {directory_path}")
+    """Processes all images in the directory."""
+    print(f"\nProcessing images in: {directory_path}")
     return processor.ProcessDirectory(directory_path)
 
 
 def PrintResume(results: list, directory_path: str):
-    """Exibe o resumo do processamento."""
-    print(f"\nRESUMO DO PROCESSAMENTO")
+    """Displays the processing summary."""
+    print(f"\nPROCESSING SUMMARY")
     print("-" * 30)
-    print(f"Imagens processadas: {len(results)}")
+    print(f"Images processed: {len(results)}")
     
     successful = [r for r in results if 'error' not in r]
     errors = [r for r in results if 'error' in r]
     
-    print(f"Sucessos: {len(successful)}")
-    print(f"Erros: {len(errors)}")
+    print(f"Successes: {len(successful)}")
+    print(f"Errors: {len(errors)}")
     
     if successful:
         total_calories = sum(r['total_calories'] for r in successful)
-        print(f"Calorias totais detectadas: {total_calories:.1f} kcal")
+        print(f"Total calories detected: {total_calories:.1f} kcal")
     
     if errors:
-        print(f"\nErros encontrados:")
+        print(f"\nErrors found:")
         for error in errors:
             print(f"  - {Path(error['image_path']).name}: {error['error']}")
     
-    print(f"\nProcessamento concluído!")
-    print(f"Arquivos de resultado salvos na pasta: {directory_path}")
+    print(f"\nProcessing completed!")
+    print(f"Result files saved in folder: {directory_path}")
 
 
 if __name__ == "__main__":
