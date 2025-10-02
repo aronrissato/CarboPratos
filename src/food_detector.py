@@ -24,14 +24,26 @@ class FoodDetector:
         Returns:
             List of dictionaries with detected food information
         """
-        results = self.model(image_path)
-        detections = self._ProcessDetectionResults(results)
+        yolo_detections = self.RunYOLODetection(image_path)
+        detections = self.ProcessYOLOResults(yolo_detections)
         
         # If no foods detected, try detecting by filename
         if not detections:
-            detections = self._DetectFromFilename(image_path)
+            detections = self.DetectFromFilename(image_path)
         
         return detections
+    
+    def RunYOLODetection(self, image_path: str):
+        """Runs YOLO model on the image."""
+        return self.model(image_path)
+    
+    def ProcessYOLOResults(self, results) -> List[Dict]:
+        """Processes YOLO detection results."""
+        return self._ProcessDetectionResults(results)
+    
+    def DetectFromFilename(self, image_path: str) -> List[Dict]:
+        """Detects foods based on filename as fallback."""
+        return self._DetectFromFilename(image_path)
     
     def EstimateFoodQuantity(self, detection: Dict, image_shape: Tuple[int, int]) -> float:
         """
@@ -44,23 +56,38 @@ class FoodDetector:
         Returns:
             Estimated quantity in grams
         """
-        # Calculate food area in cm²
-        food_area_cm2 = self._CalculateFoodArea(detection, image_shape)
+        food_area_cm2 = self.CalculateFoodArea(detection, image_shape)
+        density = self.GetFoodDensity(detection['class_name'])
+        avg_height_cm = self.EstimateFoodHeight(detection['class_name'])
+        food_volume_cm3 = self.CalculateFoodVolume(food_area_cm2, avg_height_cm)
+        estimated_weight = self.CalculateFoodWeight(food_volume_cm3, density)
         
-        # Get food density and height
-        density = self._GetFoodDensity(detection['class_name'])
-        avg_height_cm = self._EstimateFoodHeight(detection['class_name'])
-        
-        # Food volume in cm³
-        food_volume_cm3 = food_area_cm2 * avg_height_cm
-        
-        # Estimated weight in grams
-        estimated_weight = food_volume_cm3 * density
-        
-        # Realistic limitations: minimum 30g, maximum 400g per food
-        estimated_weight = max(min(estimated_weight, 400), 30)
-        
-        return round(estimated_weight, 1)
+        return self.ApplyWeightLimitations(estimated_weight)
+    
+    def CalculateFoodArea(self, detection: Dict, image_shape: Tuple[int, int]) -> float:
+        """Calculates food area in cm²."""
+        return self._CalculateFoodArea(detection, image_shape)
+    
+    def GetFoodDensity(self, food_name: str) -> float:
+        """Gets food density."""
+        return self._GetFoodDensity(food_name)
+    
+    def EstimateFoodHeight(self, food_name: str) -> float:
+        """Estimates average food height on the plate."""
+        return self._EstimateFoodHeight(food_name)
+    
+    def CalculateFoodVolume(self, area_cm2: float, height_cm: float) -> float:
+        """Calculates food volume in cm³."""
+        return area_cm2 * height_cm
+    
+    def CalculateFoodWeight(self, volume_cm3: float, density: float) -> float:
+        """Calculates estimated food weight in grams."""
+        return volume_cm3 * density
+    
+    def ApplyWeightLimitations(self, weight: float) -> float:
+        """Applies realistic weight limitations (30g-400g)."""
+        limited_weight = max(min(weight, 400), 30)
+        return round(limited_weight, 1)
     
     def _DetectFromFilename(self, image_path: str) -> List[Dict]:
         """

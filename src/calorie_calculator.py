@@ -2,7 +2,7 @@
 Calorie calculator based on food detections.
 """
 
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from pathlib import Path
 from .food_detector import FoodDetector
 import cv2
@@ -12,15 +12,6 @@ from PIL import Image
 
 class CalorieCalculator:
     """Calorie calculator for food plates."""
-    
-    def __init__(self, detector: FoodDetector):
-        """
-        Initializes the calculator.
-        
-        Args:
-            detector: Food detector instance
-        """
-        self.detector = detector
     
     def CalculatePlateCalories(self, image_path: str) -> Dict:
         """
@@ -32,25 +23,34 @@ class CalorieCalculator:
         Returns:
             Dictionary with plate and calorie information
         """
-        # Detect foods in the image
-        detections = self.detector.DetectFoods(image_path)
+        detections = self.DetectFoodsInImage(image_path)
+        image_shape = self.GetImageDimensions(image_path)
+        food_details = self.ProcessFoodDetections(detections, image_shape)
+        total_calories = self.CalculateTotalCalories(food_details)
         
-        # Load image to get dimensions
+        return {
+            'total_calories': round(total_calories, 1),
+            'food_count': len(detections),
+            'food_details': food_details,
+            'image_path': image_path
+        }
+    
+    def DetectFoodsInImage(self, image_path: str) -> List[Dict]:
+        """Detects foods in the image using the detector."""
+        return self.detector.DetectFoods(image_path)
+    
+    def GetImageDimensions(self, image_path: str) -> Tuple[int, int]:
+        """Gets image dimensions for calculations."""
         image = self._LoadImage(image_path)
-        image_shape = image.shape[:2]  # (height, width)
-        
-        total_calories = 0
+        return image.shape[:2]  # (height, width)
+    
+    def ProcessFoodDetections(self, detections: List[Dict], image_shape: Tuple[int, int]) -> List[Dict]:
+        """Processes each food detection and calculates details."""
         food_details = []
         
-        # Process each detection
         for detection in detections:
-            # Estimate quantity in grams
             estimated_weight = self.detector.EstimateFoodQuantity(detection, image_shape)
-            
-            # Calculate calories for this quantity
-            calories = (detection['calories_per_100g'] * estimated_weight) / 100
-            
-            total_calories += calories
+            calories = self.CalculateFoodCalories(detection, estimated_weight)
             
             food_details.append({
                 'food': detection['class_name'],
@@ -59,12 +59,15 @@ class CalorieCalculator:
                 'confidence': round(detection['confidence'], 2)
             })
         
-        return {
-            'total_calories': round(total_calories, 1),
-            'food_count': len(detections),
-            'food_details': food_details,
-            'image_path': image_path
-        }
+        return food_details
+    
+    def CalculateFoodCalories(self, detection: Dict, weight: float) -> float:
+        """Calculates calories for a specific food quantity."""
+        return (detection['calories_per_100g'] * weight) / 100
+    
+    def CalculateTotalCalories(self, food_details: List[Dict]) -> float:
+        """Calculates total calories from all food details."""
+        return sum(food['calories'] for food in food_details)
     
     def _LoadImage(self, image_path: str) -> np.ndarray:
         """
@@ -107,3 +110,12 @@ class CalorieCalculator:
                 
         except Exception as e:
             raise ValueError(f"Unsupported Image Format or Corrupted File: {image_path} - {str(e)}")
+    
+    def __init__(self, detector: FoodDetector):
+        """
+        Initializes the calculator.
+        
+        Args:
+            detector: Food detector instance
+        """
+        self.detector = detector
