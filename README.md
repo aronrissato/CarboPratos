@@ -1,6 +1,6 @@
 # CarboPratos - Food Calorie Analyzer 🍽️
 
-A simple and efficient system for analyzing calories in food plates using YOLO and AI.
+A simple and efficient system for analyzing calories in food plates using FastAI with ResNet for food classification.
 
 ## 🚀 How to Use
 
@@ -26,8 +26,8 @@ python main.py
 
 The program will:
 - Process all JPEG/PNG images in the folder
-- Detect foods using YOLO
-- Calculate calories based on detected foods
+- Classify foods using FastAI with ResNet
+- Calculate calories based on classified foods
 - Generate `.txt` files with results
 
 ## 📁 Project Structure
@@ -36,7 +36,8 @@ The program will:
 CarboPratos/
 ├── src/
 │   ├── calorie_database.py    # Calorie database
-│   ├── food_detector.py       # YOLO food detector
+│   ├── food_classifier.py    # FastAI food classifier
+│   ├── food_detector.py       # Food detector (using classifier)
 │   ├── calorie_calculator.py  # Calorie calculator
 │   └── image_processor.py     # Image processor
 ├── main.py                    # Main program
@@ -93,13 +94,13 @@ flowchart TD
     L --> M["🔄 For each image file<br/>📁 image_processor.py::ProcessDirectory()"]
     
     M --> N["📷 Load image with OpenCV/PIL<br/>📁 calorie_calculator.py::_LoadImage()"]
-    N --> O["🎯 Run YOLO detection<br/>📁 food_detector.py::RunYOLODetection()"]
-    O --> P["📊 Create detection visualization<br/>📁 food_detector.py::VisualizeDetections()"]
-    P --> Q["⚙️ Process YOLO results<br/>📁 food_detector.py::_ProcessDetectionResults()"]
-    Q --> R{Foods detected?}
+    N --> O["🎯 Run FastAI classification<br/>📁 food_classifier.py::ClassifyFoods()"]
+    O --> P["📊 Create classification visualization<br/>📁 food_detector.py::VisualizeDetections()"]
+    P --> Q["⚙️ Process classification results<br/>📁 food_detector.py::_ProcessClassificationResults()"]
+    Q --> R{Foods classified?}
     
-    R -->|No| S["📭 Return empty result<br/>📁 food_detector.py::_ProcessDetectionResults()"]
-    R -->|Yes| T["🔄 For each detection<br/>📁 calorie_calculator.py::ProcessFoodDetections()"]
+    R -->|No| S["📭 Return empty result<br/>📁 food_detector.py::_ProcessClassificationResults()"]
+    R -->|Yes| T["🔄 For each classification<br/>📁 calorie_calculator.py::ProcessFoodDetections()"]
     T --> U["📐 Calculate food area in cm²<br/>📁 food_detector.py::CalculateFoodArea()"]
     U --> V["⚖️ Get food density<br/>📁 food_detector.py::GetFoodDensity()"]
     V --> W["📏 Estimate food height<br/>📁 food_detector.py::EstimateFoodHeight()"]

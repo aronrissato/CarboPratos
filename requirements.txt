@@ -1,7 +1,8 @@
-ultralytics==8.0.196
+fastai==2.7.13
 opencv-python-headless==4.8.1.78
 opencv-contrib-python==4.8.1.78
 Pillow==10.0.1
 numpy<2.0.0
 torch==2.0.1
 torchvision==0.15.2
+matplotlib==3.7.2

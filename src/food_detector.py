@@ -1,22 +1,22 @@
 """
-Food detector using YOLO.
-Responsible for detecting foods in images.
+Food detector using FastAI classification.
+Responsible for detecting foods in images using deep learning classification.
 """
 
 from typing import List, Tuple, Dict
 import cv2
 import numpy as np
 from pathlib import Path
-from ultralytics import YOLO
+from .food_classifier import FoodClassifier
 from .calorie_database import get_calories_per_100g, get_available_foods
 
 
 class FoodDetector:
-    """Food detector using YOLO."""
+    """Food detector using FastAI classification."""
     
     def DetectFoods(self, image_path: str) -> List[Dict]:
         """
-        Detects foods in an image.
+        Detects foods in an image using classification.
         
         Args:
             image_path: Path to the image
@@ -24,33 +24,33 @@ class FoodDetector:
         Returns:
             List of dictionaries with detected food information
         """
-        yolo_detections = self.RunYOLODetection(image_path)
-        detections = self.ProcessYOLOResults(yolo_detections)
+        classifications = self.ClassifyFoods(image_path)
+        detections = self.ProcessClassificationResults(classifications)
         
         return detections
     
-    def RunYOLODetection(self, image_path: str):
-        """Runs YOLO model on the image."""
-        return self.model(image_path)
+    def ClassifyFoods(self, image_path: str) -> List[Dict]:
+        """Classifies foods in the image using FastAI."""
+        return self.classifier.ClassifyFoods(image_path)
     
-    def ProcessYOLOResults(self, results) -> List[Dict]:
-        """Processes YOLO detection results."""
-        return self._ProcessDetectionResults(results)
+    def ProcessClassificationResults(self, classifications: List[Dict]) -> List[Dict]:
+        """Processes classification results into detection format."""
+        return self._ProcessClassificationResults(classifications)
     
     def VisualizeDetections(self, image_path: str, output_path: str = None, show_all: bool = True) -> str:
         """
-        Creates a visualization of YOLO detections on the image.
+        Creates a visualization of food classifications on the image.
         
         Args:
             image_path: Path to the input image
             output_path: Path to save the visualization (optional)
-            show_all: If True, shows all detections; if False, only food detections
+            show_all: If True, shows all classifications; if False, only food classifications
             
         Returns:
             Path to the saved visualization image
         """
-        # Run YOLO detection
-        results = self.RunYOLODetection(image_path)
+        # Run classification
+        classifications = self.ClassifyFoods(image_path)
         
         # Load the original image
         image = cv2.imread(image_path)
@@ -59,47 +59,43 @@ class FoodDetector:
         
         detection_count = 0
         
-        # Draw all detections
-        for result in results:
-            boxes = result.boxes
-            if boxes is not None:
-                for box in boxes:
-                    # Get coordinates and confidence
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    confidence = box.conf[0].cpu().numpy()
-                    class_id = int(box.cls[0].cpu().numpy())
-                    class_name = self.model.names[class_id]
-                    
-                    # Check if we should show this detection
-                    if not show_all:
-                        # Only show food-related detections
-                        calories = get_calories_per_100g(class_name)
-                        if calories <= 0 and class_name not in ['bowl', 'cup', 'dining table']:
-                            continue
-                    
-                    detection_count += 1
-                    
-                    # Choose color based on detection type
-                    if class_name in ['bowl', 'cup', 'dining table']:
-                        color = (255, 0, 0)  # Red for utensils/table
-                    elif get_calories_per_100g(class_name) > 0:
-                        color = (0, 255, 0)  # Green for food
-                    else:
-                        color = (0, 0, 255)  # Blue for other objects
-                    
-                    # Draw bounding box
-                    cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                    
-                    # Draw label with confidence
-                    label = f"{class_name}: {confidence:.2f}"
-                    label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
-                    cv2.rectangle(image, (int(x1), int(y1) - label_size[1] - 10), 
-                                 (int(x1) + label_size[0], int(y1)), color, -1)
-                    cv2.putText(image, label, (int(x1), int(y1) - 5), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        # Draw classifications
+        for i, classification in enumerate(classifications):
+            # Check if we should show this classification
+            if not show_all:
+                # Only show food-related classifications
+                calories = classification.get('calories_per_100g', 0)
+                if calories <= 0:
+                    continue
+            
+            detection_count += 1
+            
+            # Get bounding box coordinates
+            bbox = classification.get('bbox', (0, 0, image.shape[1], image.shape[0]))
+            x1, y1, x2, y2 = bbox
+            
+            # Choose color based on classification type
+            calories = classification.get('calories_per_100g', 0)
+            if calories > 0:
+                color = (0, 255, 0)  # Green for food
+            else:
+                color = (0, 0, 255)  # Blue for other objects
+            
+            # Draw bounding box
+            cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+            
+            # Draw label with confidence
+            class_name = classification.get('class_name', 'unknown')
+            confidence = classification.get('confidence', 0.0)
+            label = f"{class_name}: {confidence:.2f}"
+            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+            cv2.rectangle(image, (int(x1), int(y1) - label_size[1] - 10), 
+                         (int(x1) + label_size[0], int(y1)), color, -1)
+            cv2.putText(image, label, (int(x1), int(y1) - 5), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         
         # Add detection count to image
-        cv2.putText(image, f"Total detections: {detection_count}", (10, 30), 
+        cv2.putText(image, f"Total classifications: {detection_count}", (10, 30), 
                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
         
         # Generate output path if not provided
@@ -158,47 +154,35 @@ class FoodDetector:
         return round(limited_weight, 1)
     
     
-    def _ProcessDetectionResults(self, results) -> List[Dict]:
+    def _ProcessClassificationResults(self, classifications: List[Dict]) -> List[Dict]:
         """
-        Processes YOLO detection results.
+        Processes classification results into detection format.
         
         Args:
-            results: YOLO model results
+            classifications: List of classification results
             
         Returns:
             List of processed detections
         """
         detections = []
         
-        for result in results:
-            boxes = result.boxes
-            if boxes is not None:
-                for box in boxes:
-                    # Get coordinates and confidence
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    confidence = box.conf[0].cpu().numpy()
-                    class_id = int(box.cls[0].cpu().numpy())
-                    
-                    # Get class name
-                    class_name = self.model.names[class_id]
-                    
-                    # Map COCO class to food if possible
-                    food_name = self.coco_to_food.get(class_name, class_name)
-                    
-                    # Calculate detection area
-                    area = (x2 - x1) * (y2 - y1)
-                    
-                    # Only add if it's a food with known calories
-                    calories = get_calories_per_100g(food_name)
-                    if calories > 0 or class_name in ['bowl', 'cup']:  # Include utensils for context
-                        detections.append({
-                            'class_name': food_name,
-                            'coco_class': class_name,
-                            'confidence': float(confidence),
-                            'bbox': (float(x1), float(y1), float(x2), float(y2)),
-                            'area': float(area),
-                            'calories_per_100g': calories
-                        })
+        for classification in classifications:
+            # Extract information from classification
+            class_name = classification.get('class_name', 'unknown')
+            confidence = classification.get('confidence', 0.0)
+            bbox = classification.get('bbox', (0, 0, 640, 480))
+            area = classification.get('area', 307200)
+            calories = classification.get('calories_per_100g', 0)
+            
+            # Only add if it's a food with known calories
+            if calories > 0:
+                detections.append({
+                    'class_name': class_name,
+                    'confidence': float(confidence),
+                    'bbox': bbox,
+                    'area': float(area),
+                    'calories_per_100g': calories
+                })
         
         return detections
     
@@ -293,29 +277,12 @@ class FoodDetector:
             return 3.0  # Default height
     
     
-    def __init__(self, model_path: str = "yolov8n.pt"):
+    def __init__(self, model_path: str = None):
         """
         Initializes the detector.
         
         Args:
-            model_path: Path to YOLO model
+            model_path: Path to FastAI model (optional)
         """
-        self.model = YOLO(model_path)
+        self.classifier = FoodClassifier(model_path)
         self.food_classes = get_available_foods()
-        
-        # Mapping of COCO classes to utensils and main foods
-        self.coco_to_food = {
-            'bowl': 'bowl',
-            'cup': 'cup',
-            'fork': 'utensil',
-            'knife': 'utensil',
-            'spoon': 'utensil',
-            'carrot': 'carrot',
-            'broccoli': 'broccoli',
-            'cake': 'cake',
-            'donut': 'donut',
-            'pizza': 'pizza',
-            'sandwich': 'sandwich',
-            'hot dog': 'hot dog',
-            'hamburger': 'hamburger'
-        }
