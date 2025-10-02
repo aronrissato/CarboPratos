@@ -1,0 +1,10 @@
+ANÁLISE DE CALORIAS - feijaoearroz.jpg
+==================================================
+
+Calorias totais: 1908.0 kcal
+Alimentos detectados: 2
+
+Detalhes dos alimentos:
+------------------------------
+• Feijao: 400g (1388.0 kcal) [Confiança: 0.7]
+• Arroz: 400g (520.0 kcal) [Confiança: 0.7]
