@@ -27,10 +27,6 @@ class FoodDetector:
         yolo_detections = self.RunYOLODetection(image_path)
         detections = self.ProcessYOLOResults(yolo_detections)
         
-        # If no foods detected, try detecting by filename
-        if not detections:
-            detections = self.DetectFromFilename(image_path)
-        
         return detections
     
     def RunYOLODetection(self, image_path: str):
@@ -41,9 +37,81 @@ class FoodDetector:
         """Processes YOLO detection results."""
         return self._ProcessDetectionResults(results)
     
-    def DetectFromFilename(self, image_path: str) -> List[Dict]:
-        """Detects foods based on filename as fallback."""
-        return self._DetectFromFilename(image_path)
+    def VisualizeDetections(self, image_path: str, output_path: str = None, show_all: bool = True) -> str:
+        """
+        Creates a visualization of YOLO detections on the image.
+        
+        Args:
+            image_path: Path to the input image
+            output_path: Path to save the visualization (optional)
+            show_all: If True, shows all detections; if False, only food detections
+            
+        Returns:
+            Path to the saved visualization image
+        """
+        # Run YOLO detection
+        results = self.RunYOLODetection(image_path)
+        
+        # Load the original image
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Could not load image: {image_path}")
+        
+        detection_count = 0
+        
+        # Draw all detections
+        for result in results:
+            boxes = result.boxes
+            if boxes is not None:
+                for box in boxes:
+                    # Get coordinates and confidence
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    confidence = box.conf[0].cpu().numpy()
+                    class_id = int(box.cls[0].cpu().numpy())
+                    class_name = self.model.names[class_id]
+                    
+                    # Check if we should show this detection
+                    if not show_all:
+                        # Only show food-related detections
+                        calories = get_calories_per_100g(class_name)
+                        if calories <= 0 and class_name not in ['bowl', 'cup', 'dining table']:
+                            continue
+                    
+                    detection_count += 1
+                    
+                    # Choose color based on detection type
+                    if class_name in ['bowl', 'cup', 'dining table']:
+                        color = (255, 0, 0)  # Red for utensils/table
+                    elif get_calories_per_100g(class_name) > 0:
+                        color = (0, 255, 0)  # Green for food
+                    else:
+                        color = (0, 0, 255)  # Blue for other objects
+                    
+                    # Draw bounding box
+                    cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                    
+                    # Draw label with confidence
+                    label = f"{class_name}: {confidence:.2f}"
+                    label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+                    cv2.rectangle(image, (int(x1), int(y1) - label_size[1] - 10), 
+                                 (int(x1) + label_size[0], int(y1)), color, -1)
+                    cv2.putText(image, label, (int(x1), int(y1) - 5), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        
+        # Add detection count to image
+        cv2.putText(image, f"Total detections: {detection_count}", (10, 30), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+        
+        # Generate output path if not provided
+        if output_path is None:
+            input_path = Path(image_path)
+            suffix = "_all_detections" if show_all else "_food_detections"
+            output_path = input_path.parent / f"{input_path.stem}{suffix}{input_path.suffix}"
+        
+        # Save the visualization
+        cv2.imwrite(str(output_path), image)
+        return str(output_path)
+    
     
     def EstimateFoodQuantity(self, detection: Dict, image_shape: Tuple[int, int]) -> float:
         """
@@ -89,37 +157,6 @@ class FoodDetector:
         limited_weight = max(min(weight, 400), 30)
         return round(limited_weight, 1)
     
-    def _DetectFromFilename(self, image_path: str) -> List[Dict]:
-        """
-        Detects foods based on filename as fallback.
-        
-        Args:
-            image_path: Path to the image
-            
-        Returns:
-            List of detections based on filename
-        """
-        filename = Path(image_path).stem.lower()
-        detected_foods = self._ExtractFoodsFromFilename(filename)
-        
-        # Create detections for found foods
-        detections = []
-        for food in detected_foods:
-            calories = get_calories_per_100g(food)
-            if calories > 0:
-                # Fictitious area proportional to number of foods
-                area_per_food = 50000 // max(len(detected_foods), 1)
-                
-                detections.append({
-                    'class_name': food,
-                    'coco_class': 'filename_detection',
-                    'confidence': 0.7,  # Average confidence for filename detection
-                    'bbox': (0, 0, 100, 100),  # Fictitious bbox
-                    'area': area_per_food,
-                    'calories_per_100g': calories
-                })
-        
-        return detections
     
     def _ProcessDetectionResults(self, results) -> List[Dict]:
         """
@@ -192,11 +229,6 @@ class FoodDetector:
         # Food occupied area in cm²
         food_area_cm2 = area_ratio * plate_area_cm2
         
-        # Adjustment for filename detection (fictitious area)
-        if detection.get('coco_class') == 'filename_detection':
-            # For filename detection, assumes food occupies half the plate
-            food_area_cm2 = plate_area_cm2 * 0.4  # 40% of plate per food
-        
         return food_area_cm2
     
     def _GetFoodDensity(self, food_name: str) -> float:
@@ -260,46 +292,6 @@ class FoodDetector:
         else:
             return 3.0  # Default height
     
-    def _ExtractFoodsFromFilename(self, filename: str) -> List[str]:
-        """
-        Extracts foods from filename.
-        
-        Args:
-            filename: Filename (without extension)
-            
-        Returns:
-            List of detected foods
-        """
-        # Specific mapping for common filenames
-        filename_mappings = {
-            'feijaoearroz': ['feijao', 'arroz'],
-            'feijao_arroz': ['feijao', 'arroz'],
-            'feijão_arroz': ['feijão', 'arroz'],
-            'arroz_feijao': ['arroz', 'feijao'],
-            'arroz_feijão': ['arroz', 'feijão'],
-            'prato_feijao': ['feijao'],
-            'prato_arroz': ['arroz'],
-            'salada_verde': ['alface', 'tomate'],
-            'salada_mista': ['alface', 'tomate', 'cenoura'],
-            'frango_arroz': ['frango', 'arroz'],
-            'macarrao_queijo': ['macarrao', 'queijo'],
-            'pasta_queijo': ['massa', 'queijo'],
-        }
-        
-        # Check specific mappings first
-        detected_foods = []
-        for pattern, foods in filename_mappings.items():
-            if pattern in filename:
-                detected_foods.extend(foods)
-                break
-        
-        # If no specific mapping found, search for individual words
-        if not detected_foods:
-            for food in self.food_classes:
-                if food in filename and len(food) > 2:  # Avoid false positives
-                    detected_foods.append(food)
-        
-        return detected_foods
     
     def __init__(self, model_path: str = "yolov8n.pt"):
         """

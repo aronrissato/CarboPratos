@@ -1,10 +1,7 @@
 CALORIE ANALYSIS - feijaoearroz.jpg
 ==================================================
 
-Total calories: 1908.0 kcal
-Foods detected: 2
+Total calories: 0 kcal
+Foods detected: 0
 
-Food details:
-------------------------------
-• Feijao: 400g (1388.0 kcal) [Confidence: 0.7]
-• Arroz: 400g (520.0 kcal) [Confidence: 0.7]
+No foods were detected in the image.
